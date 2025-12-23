@@ -12,52 +12,72 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 @WebServlet("/LoginServlet")
 public class LoginServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
+    // --- 1. HANDLING LOGIN (POST REQUEST) ---
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         
-        String uName = request.getParameter("username");
+        String uEmail = request.getParameter("email");
         String uPass = request.getParameter("password");
         
         response.setContentType("text/html");
         PrintWriter out = response.getWriter();
         
-        // UPDATE THESE AGAIN
+        // Database Config
         String dbUrl = "jdbc:mysql://localhost:3306/userdb";
         String dbUname = "root";
-        String dbPassword = "admin"; // <--- CHANGE THIS
+        String dbPassword = "admin"; // Check your password
         String dbDriver = "com.mysql.cj.jdbc.Driver";
         
         try {
             Class.forName(dbDriver);
             Connection con = DriverManager.getConnection(dbUrl, dbUname, dbPassword);
             
-            // Check if user exists with matching password
-            String query = "SELECT * FROM users WHERE username=? AND password=?";
+            // Search by email and password
+            String query = "SELECT * FROM users WHERE email=? AND password=?";
             PreparedStatement ps = con.prepareStatement(query);
-            ps.setString(1, uName);
+            ps.setString(1, uEmail);
             ps.setString(2, uPass);
             
             ResultSet rs = ps.executeQuery();
             
             if(rs.next()) {
-                // Login Success
-                out.println("<h3 style='color:green'>Welcome, " + uName + "! You are logged in.</h3>");
-                out.println("<a href='login.jsp'>Logout</a>");
+                // LOGIN SUCCESS
+                HttpSession session = request.getSession();
+                session.setAttribute("username", rs.getString("username"));
+                session.setAttribute("email", rs.getString("email")); // Save email for bookings
+                
+                response.sendRedirect("home.jsp");
+                
             } else {
-                // Login Failed
-                out.println("<h3 style='color:red'>Invalid Username or Password</h3>");
-                out.println("<a href='login.jsp'>Try Again</a>");
+                // LOGIN FAILED
+                out.println("<script type=\"text/javascript\">");
+                out.println("alert('Invalid Email or Password');");
+                out.println("location='login.jsp';");
+                out.println("</script>");
             }
             
             con.close();
             
         } catch (Exception e) {
             e.printStackTrace();
-            out.println("Error: " + e.getMessage());
+            out.println("<h3 style='color:red'>Error: " + e.getMessage() + "</h3>");
+        }
+    }
+
+    // --- 2. HANDLING LOGOUT (GET REQUEST) ---
+    // This runs when you click <a href="LoginServlet?logout=true">Logout</a>
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String logout = request.getParameter("logout");
+        
+        if(logout != null && logout.equals("true")) {
+            HttpSession session = request.getSession();
+            session.invalidate(); // Destroys the session (logs the user out)
+            response.sendRedirect("login.jsp"); // Send back to login screen
         }
     }
 }

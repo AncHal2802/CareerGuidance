@@ -5,7 +5,10 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.util.regex.Pattern; // Imported for validation
+import java.util.regex.Pattern;
+
+// 1. IMPORT SESSION HANDLING
+import jakarta.servlet.http.HttpSession;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -27,9 +30,7 @@ public class RegisterServlet extends HttpServlet {
         PrintWriter out = response.getWriter();
         
         // --- VALIDATION START ---
-        
         // 1. Validate Password (Server Side)
-        // Rule: 8+ chars, 1 digit, 1 special char
         String passPattern = "^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$";
         boolean isPassValid = Pattern.matches(passPattern, uPass);
         
@@ -37,11 +38,10 @@ public class RegisterServlet extends HttpServlet {
             out.println("<h3 style='color:red'>Registration Failed</h3>");
             out.println("<p>Password is too weak. It must be 8 characters long and include a number and special character.</p>");
             out.println("<a href='register.jsp'>Go Back</a>");
-            return; // Stop the code here
+            return; 
         }
         
-        // 2. Validate Email (Server Side)
-        // Basic check: must contain @ and .
+        // 2. Validate Email
         if (uEmail == null || !uEmail.contains("@") || !uEmail.contains(".")) {
              out.println("<h3 style='color:red'>Invalid Email</h3>");
              out.println("<a href='register.jsp'>Go Back</a>");
@@ -67,16 +67,30 @@ public class RegisterServlet extends HttpServlet {
             int count = ps.executeUpdate();
             
             if(count > 0) {
-                out.println("<h3 style='color:green'>Registration Successful!</h3>");
-                out.println("<a href='login.jsp'>Go to Login</a>");
+                // --- SUCCESS: AUTO-LOGIN LOGIC ---
+                
+                // 1. Create the session
+                HttpSession session = request.getSession();
+                
+                // 2. Save User Info (This logs them in)
+                session.setAttribute("username", uName);
+                session.setAttribute("email", uEmail);
+                
+                // 3. Redirect directly to Home Page
+                response.sendRedirect("home.jsp");
+                
             } else {
                 out.println("<h3 style='color:red'>Registration Failed</h3>");
+                out.println("<a href='register.jsp'>Try Again</a>");
             }
             con.close();
             
         } catch (Exception e) {
             e.printStackTrace();
-            out.println("<h3 style='color:red'>Error: " + e.getMessage() + "</h3>");
+            // This usually happens if the Email already exists in DB
+            out.println("<h3 style='color:red'>Error: User or Email likely already exists.</h3>");
+            out.println("<p>" + e.getMessage() + "</p>");
+            out.println("<a href='register.jsp'>Go Back</a>");
         }
     }
 }

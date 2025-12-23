@@ -15,7 +15,6 @@
             errorSpan.innerHTML = "";
 
             // Check for Strong Password
-            // (At least 8 characters, 1 number, 1 special character)
             var strongPassRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
             if (!strongPassRegex.test(password)) {
                 errorSpan.innerHTML = "Password must be 8+ chars, include a number & special char.";
@@ -28,11 +27,12 @@
                 return false;
             }
 
-            return true; // Allow submission
+            return true;
         }
     </script>
 </head>
-<body>
+<body class="auth-page">
+    
     <div class="container">
         
         <div class="illustration-side">
@@ -45,7 +45,7 @@
             <form name="regForm" action="RegisterServlet" method="post" onsubmit="return validateForm()">
                 
                 <div class="form-group">
-                    <label>Full Name</label>
+                    <label>Username</label>
                     <input type="text" name="username" placeholder="Enter your name" required>
                 </div>
                 
